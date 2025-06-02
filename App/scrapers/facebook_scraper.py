@@ -38,10 +38,9 @@ def scrape_facebook_listings(config: Dict) -> List[Dict]:
             page.goto(search_url, timeout=60000)
             page.wait_for_timeout(5000)  # Wait for listings to load
 
-            # Save a screenshot
+            # Save debug files
+            os.makedirs("debugs", exist_ok=True)
             page.screenshot(path=f"./debugs/debug_{keyword}.png", full_page=True)
-
-            # Save page HTML
             with open(f"./debugs/debug_{keyword}.html", "w", encoding="utf-8") as f:
                 f.write(page.content())
 
@@ -51,11 +50,39 @@ def scrape_facebook_listings(config: Dict) -> List[Dict]:
                     price = item.locator("span").first.inner_text()
                     link = item.get_attribute("href")
 
-                    # Validate content
+                    # Try to extract title more accurately
+                    title = ""
+                    # 1. Look for a div that contains multiple spans
+                    try:
+                        divs = item.locator("div").all()
+                        for div in divs:
+                            text = div.inner_text().strip()
+                            if text and len(text) > 10 and "\n" not in text:
+                                title = text
+                                break
+                    except:
+                        pass
+
+                    # 2. Fallback: longest <span> without newlines (often the title)
+                    if not title:
+                        try:
+                            span_texts = [s.inner_text().strip() for s in item.locator("span").all()]
+                            longest = max(span_texts, key=len, default="")
+                            if longest and "\n" not in longest:
+                                title = longest
+                        except:
+                            pass
+
+                    # 3. Last fallback: use price text as title (not ideal)
+                    if not title:
+                        title = price
+
+
                     if not price or not link:
                         continue
 
                     listings.append({
+                        "title": title,
                         "price": price,
                         "url": f"https://facebook.com{link}",
                         "search_term": keyword
