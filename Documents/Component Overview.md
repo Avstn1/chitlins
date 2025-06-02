@@ -1,19 +1,23 @@
-# 🧩 Component Overview
+# 🧩 Component Overview — Marketplace Scraper & Alert System
 
-This document outlines each module of the Marketplace Scraper & Automation Tool. The system is designed for modularity, so you can easily add platforms like Kijiji or Best Buy later.
+This document outlines the modular components of your background scraper tool. It is designed for headless operation, meaning it silently checks listings, applies filters, and alerts you to matches — without launching a browser window.
 
 ---
 
-## 🗂️ Project Structure Summary
+## 🗂️ Project Structure
 
 ```
 marketplace_automation/
 ├── main.py
 ├── config.yaml
 ├── scrapers/
-├── automation/
+│   └── facebook.py
+├── filters/
+│   └── keyword_filter.py
 ├── notifications/
+│   └── notifier.py
 ├── utils/
+│   └── logger.py
 ```
 
 ---
@@ -21,89 +25,70 @@ marketplace_automation/
 ## 🧠 Core Components
 
 ### `main.py`
-- **Purpose**: Orchestrates the overall execution of the app.
+- **Purpose**: Main entrypoint and orchestrator.
 - **Responsibilities**:
-  - Load `config.yaml`
+  - Load configuration from `config.yaml`
   - Initialize logging
-  - Start scraper loop (e.g., Facebook first)
-  - Send new listings to notifier and browser automation
+  - Schedule periodic scraping
+  - Pass listings through filters
+  - Trigger alerts for matches
 
 ---
 
-## 🕷 scrapers/
-
-### `scrapers/facebook.py`
-- **Purpose**: Extract item listings from Facebook Marketplace.
+## 🕷 scrapers/facebook.py
+- **Purpose**: Collect raw item listings from Facebook Marketplace.
 - **Responsibilities**:
-  - Login via Playwright and saved session (or manually)
-  - Navigate to target search URL
-  - Scrape listings: title, price, location, time, URL
-  - Apply filters from `config.yaml`
-  - Deduplicate results to avoid spam
-
-### `scrapers/kijiji.py` _(stub)_
-- Placeholder for Kijiji scraping logic using similar interface.
-
-### `scrapers/bestbuy.py` _(stub)_
-- Placeholder for Best Buy product and inventory scraping.
+  - Log in via saved session or cookies
+  - Navigate to location-specific search pages
+  - Extract listings: title, price, location, time, URL
+  - Return a list of structured dictionaries:
+    ```python
+    [
+      {"title": "MacBook Pro", "price": 800, "location": "Toronto", "url": "..."},
+      ...
+    ]
+    ```
 
 ---
 
-## 🤖 automation/
-
-### `automation/browser_controller.py`
-- **Purpose**: Handles browser interactions.
+## 🧹 filters/keyword_filter.py
+- **Purpose**: Apply filters based on config.
 - **Responsibilities**:
-  - Open marketplace listing in user’s browser
-  - Optionally scroll, click, or prepare UI for manual input
-  - Wait for human to handle CAPTCHA or send message
-
-### `automation/autofill.py`
-- **Purpose**: Autofill saved contact details.
-- **Responsibilities**:
-  - Inject basic form data (e.g., message to seller)
-  - Uses Playwright or browser APIs
-  - Only acts when site allows safe form manipulation
+  - Match keywords from `config.yaml`
+  - Enforce min/max price constraints
+  - Deduplicate using a seen-items store or hash
+  - Return only new, valid listings
 
 ---
 
-## 🔔 notifications/
-
-### `notifications/notifier.py`
-- **Purpose**: Alert user when a relevant item is detected.
+## 🔔 notifications/notifier.py
+- **Purpose**: Notify the user when a matching listing is found.
 - **Responsibilities**:
-  - Send desktop alert (via `plyer`)
-  - Include item name, price, location, and a clickable link
-  - Optional webhook/Telegram/Slack extensions
-
----
-
-## 🧰 utils/
-
-### `utils/logger.py`
-- **Purpose**: Consistent logging system.
-- **Responsibilities**:
-  - Log events to console and file
-  - Include timestamps, levels, and optionally color
+  - Send a desktop notification (via `plyer`)
+  - Display item title, price, and a clickable link
+  - (Future: Telegram/Discord webhook options)
 
 ---
 
 ## ⚙️ config.yaml
 
-- Central location for runtime settings:
+Example:
+
 ```yaml
 facebook:
   enabled: true
   location: "Toronto"
-  radius_km: 25
+  radius_km: 30
   search_terms:
-    - "gaming pc"
     - "macbook"
+    - "gaming laptop"
+    - "3070"
   price_range:
-    min: 100
-    max: 1200
-  check_interval_seconds: 90
-  headless: false
+    min: 300
+    max: 1500
+  check_interval_seconds: 120
+  headless: true
+  deduplicate: true
 
 notifications:
   enabled: true
@@ -112,37 +97,23 @@ notifications:
 
 ---
 
-## 🔄 Interactions Summary
+## 🔁 System Flow
 
-```text
+```
 [main.py]
-   ├──> [scrapers/facebook.py]
-   ├──> [automation/browser_controller.py]
-   ├──> [notifications/notifier.py]
-   └──> [utils/logger.py]
+   ├──> [scrapers/facebook.py] → Get new listings
+   ├──> [filters/keyword_filter.py] → Apply filters
+   └──> [notifications/notifier.py] → Send alerts
 ```
 
 ---
 
 ## 🧪 Future Add-ons
 
-| Component           | Purpose                                 |
-|--------------------|------------------------------------------|
-| `data/store.py`     | Save seen items to avoid duplicates      |
-| `scheduler.py`      | Polling and retry logic                  |
-| `anti_bot.py`       | Handle delays, captchas, retrying safely |
-| `telegram_notifier.py` | Send alerts via Telegram bot        |
-
----
-
-## 📦 Extending to More Marketplaces
-
-To add a new source like Kijiji:
-1. Create a module in `scrapers/`
-2. Implement standard interface:
-   - `load_page()`
-   - `extract_listings()`
-3. Update `main.py` to include the new platform
-4. Add configuration block in `config.yaml`
-
----
+| Component               | Purpose                                  |
+|------------------------|------------------------------------------|
+| `data/store.py`         | Save seen items to avoid duplicates      |
+| `scheduler.py`          | Custom polling logic & async timing      |
+| `telegram_notifier.py`  | Telegram-based alert system              |
+| `kijiji.py`             | Support for additional marketplaces      |
+| `anti_bot.py`           | Add rate-limiting / bot avoidance logic |
