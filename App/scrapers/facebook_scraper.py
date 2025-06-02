@@ -38,18 +38,31 @@ def scrape_facebook_listings(config: Dict) -> List[Dict]:
             page.goto(search_url, timeout=60000)
             page.wait_for_timeout(5000)  # Wait for listings to load
 
-            items = page.query_selector_all('div[role="article"]')
+            # Save a screenshot
+            page.screenshot(path=f"./debugs/debug_{keyword}.png", full_page=True)
+
+            # Save page HTML
+            with open(f"./debugs/debug_{keyword}.html", "w", encoding="utf-8") as f:
+                f.write(page.content())
+
+            items = page.locator('a[href*="/marketplace/item/"]').all()
             for item in items:
                 try:
-                    title = item.query_selector("span").inner_text()
-                    link = item.query_selector("a").get_attribute("href")
+                    title = item.locator("span").first.inner_text()
+                    link = item.get_attribute("href")
+
+                    # Validate content
+                    if not title or not link:
+                        continue
+
                     listings.append({
-                        "title": title,
+                        "price": title,
                         "url": f"https://facebook.com{link}",
                         "search_term": keyword
                     })
-                except Exception:
-                    continue
+
+                except Exception as e:
+                    print(f"[ERROR] Could not parse item: {e}")
 
         browser.close()
 
