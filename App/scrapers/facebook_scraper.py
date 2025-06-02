@@ -48,15 +48,15 @@ def scrape_facebook_listings(config: Dict) -> List[Dict]:
             items = page.locator('a[href*="/marketplace/item/"]').all()
             for item in items:
                 try:
-                    title = item.locator("span").first.inner_text()
+                    price = item.locator("span").first.inner_text()
                     link = item.get_attribute("href")
 
                     # Validate content
-                    if not title or not link:
+                    if not price or not link:
                         continue
 
                     listings.append({
-                        "price": title,
+                        "price": price,
                         "url": f"https://facebook.com{link}",
                         "search_term": keyword
                     })

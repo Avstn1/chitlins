@@ -23,7 +23,7 @@ def main():
         
         print("\n📦 Scraped Listings:")
         for item in listings:
-            print(f"- {item['title']} ({item['url']})")
+            print(f"- {item['price']} ({item['url']})")
 
         save_listings_to_json(listings)
 
