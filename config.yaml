@@ -1,0 +1,22 @@
+facebook:
+  enabled: true
+  location: "toronto-on"       # Used in the Facebook Marketplace URL
+  radius_km: 25                # Not actively used in URL, but reserved for future filtering
+  search_terms:
+    - "gaming pc"
+    - "macbook"
+    - "graphics card"
+  price_range:
+    min: 100
+    max: 1200
+  check_interval_seconds: 90   # How often to poll for new listings
+  headless: false              # Set to false for first-time login; true for background runs
+
+notifications:
+  enabled: true
+  method: "desktop"            # Could be "desktop", "telegram", or "webhook" in future
+
+logging:
+  level: "INFO"
+  log_to_file: true
+  log_file_path: "logs/scraper.log"
