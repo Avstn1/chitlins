@@ -1,2 +1,5 @@
-# Chitlins
-Right now the project is in progress while layth learns code and austin teaches lol.
+# Marketplace Scraper Tool
+
+This is an automated tool meant for scraping deals and marketplace items on online marketplaces. 
+
+
